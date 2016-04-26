@@ -1,13 +1,20 @@
 -- //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////// --
+-- INICIALIZACION ///////////////////////////////////////////////////////////////////////////////////////////////////// --
+-- //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////// --
+delete objects
+free objects
+try(destroyDialog generador) catch()
+
+-- //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////// --
 -- VARIABLES  /////////////////////////////////////////////////////////////////////////////////////////////////////////// --
 -- //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////// --
 
 -- GENERALES
 tipoMundo = 1 -- Densidad de 1 a 3: Luna(1), Marte(2) y Jupiter(3).
 
-tamX = 100
-tamY = 100
-tamMaxZ = 100
+tamX = 25
+tamY = 25
+tamMaxZ = 25
 sueloarray = #(#()) -- Array de bloques donde debe ir el suelo
 
 numRocas = 20
@@ -43,6 +50,18 @@ tmñBaseRuinas = 5
 numBosques = 3 --Número de bosques, cada uno con la misma densidad.
 densidad = 2 -- Densidad de 1 a 4, poca a extrema.
 
+-- TEXTURAS
+texturaSueloRuta = sysInfo.currentdir + "\\texturas\luna.jpg"
+texturaLunaRuta = sysInfo.currentdir + "\\texturas\luna.jpg"
+texturaMarteRuta = sysInfo.currentdir + "\\texturas\marte.jpg"
+texturaJupiterRuta = sysInfo.currentdir + "\\texturas\jupiter.jpg"
+
+-- MATERIALES
+matSuelo = StandardMaterial()
+bitmapSuelo = bitmaptexture filename: texturaSueloRuta
+matSuelo.diffusemap = bitmapSuelo
+matSuelo.showInViewport = on
+
 -- //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////// --
 -- ROLLOUTS //////////////////////////////////////////////////////////////////////////////////////////////////////////// --
 -- //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////// --
@@ -52,38 +71,33 @@ rollout generador "Generador de Mundos Minecraft" width:410 height:710(
 
 rollout seleccionarMundo "Tipo de Mundo a Generar" width:296 height:104(
 	radiobuttons radTipoDeMundo labels:#("Luna", "Marte", "Júpiter")
-	button actualizarTipoMundo "Actualizar Tipo de Mundo"
-	on actualizarTipoMundo pressed do tipoMundo = radTipoDeMundo.state
+	on radTipoDeMundo changed param do(
+		tipoMundo = radTipoDeMundo.state
+		cambiarTexturaSuelo tipoMundo
+	)
 )
 
 rollout tamañoMundo "Tamaño del Mundo" width:296 height:104(
-	spinner spinTamX "Tamaño X" range:[100,10000,100] type:#integer
-	spinner spinTamY "Tamaño Y" range:[100,10000,100] type:#integer
-	spinner spinTamMaxZ "Tamaño Maximo Z" range:[100,10000,100] type:#integer
-	button actualizarTamañoMundo "Actualizar Tamaño de Mundo"
-	on actualizarTamañoMundo pressed do( 
-		tamX = spinTamX.value
-		tamY = spinTamY.value
-		tamMaxZ = spinTamMaxZ.value
-	)
+	spinner spinTamX "Tamaño X" range:[25,200,25] type:#integer
+	spinner spinTamY "Tamaño Y" range:[25,200,25] type:#integer
+	spinner spinTamMaxZ "Tamaño Maximo Z" range:[25,200,25] type:#integer
+	on spinTamX changed param do tamX = spinTamX.value
+	on spinTamY changed param do tamY = spinTamY.value
+	on spinTamMaxZ changed param do tamMaxZ = spinTamMaxZ.value
 )
 
 rollout piedras "Parametros sobre Rocas" width:296 height:104(
 	spinner spinNumRocas "Número de Rocas" range:[0, 300, 20] type:#integer
-	button actualizarnumRocas "Actualizar Número de Rocas"
-	on actualizarnumRocas pressed do numRocas = spinNumRocas.value
+	on spinNumRocas changed param do numRocas = spinNumRocas.value
 )
 
 rollout montañas "Parametros sobre Montañas" width:296 height:104(
 	spinner spinNumMontañas "Número de Montañas" range:[0, 200, 10] type:#integer
 	spinner spinTamBaseMont "Tamaño de la Base" range:[10, 100, 20] type:#integer
 	spinner spinTamAlturaMont  "Altura de las Montañas" range:[10, 100, 20] type:#integer
-	button actualizarMontañas "Actualizar Montañas"
-	on actualizarMontañas pressed do(
-		numMontañas = spinNumMontañas.value
-		tmñBaseMontañas = spinTamBaseMont.value
-		alturaMontañas = spinTamAlturaMont.value
-	)
+	on spinNumMontañas changed param do numMontañas = spinNumMontañas.value
+	on spinTamBaseMont changed param do tmñBaseMontañas = spinTamBaseMont.value
+	on spinTamAlturaMont changed param do alturaMontañas = spinTamAlturaMont.value
 )
 
 rollout maya "Parametros sobre Piramides Maya" width:296 height:104(
@@ -91,25 +105,19 @@ rollout maya "Parametros sobre Piramides Maya" width:296 height:104(
 	spinner spinEscalonesMaya "Número de Escalones" range:[100, 1000, 100] type:#integer
 	spinner spinTamBaseMaya "Tamaño de la Base" range:[10, 100, 10] type:#integer
 	spinner spinTamAlturaMaya  "Altura de las piramides" range:[10, 100, 10] type:#integer
-	button actualizarMaya "Actualizar Piramides Maya"
-	on actualizarMaya pressed do(
-		mayaCantidad = spinCantidadMaya.value
-		mayaEscalones = spinEscalonesMaya.value
-		mayaTmñBase = spinTamBaseMaya.value
-		mayaAltura = spinTamAlturaMaya.value
-	)
+	on spinCantidadMaya changed param do mayaCantidad = spinCantidadMaya.value
+	on spinEscalonesMaya changed param do mayaEscalones = spinEscalonesMaya.value
+	on spinTamBaseMaya changed param do mayaTmñBase = spinTamBaseMaya.value
+	on spinTamAlturaMaya changed param do mayaAltura = spinTamAlturaMaya.value
 )
 
 rollout egipcia "Parametros sobre Piramides Egipcias" width:296 height:104(
 	spinner spinCantidadEgipcia "Número de Piramides Egipcias" range:[0, 300, 3] type:#integer
 	spinner spinTamBaseEgipcia "Tamaño de la Base" range:[10, 100, 10] type:#integer
 	spinner spinTamAlturaEgipcia  "Altura de las piramides" range:[10, 100, 10] type:#integer
-	button actualizarEgipcias "Actualizar Piramides Egipcias"
-	on actualizarEgipcias pressed do(
-		egipciaCantidad = spinCantidadEgipcia.value
-		egipciaTmñBase = spinTamBaseEgipcia.value
-		egipciaAltura = spinTamAlturaEgipcia.value
-	)
+	on spinCantidadEgipcia changed param do egipciaCantidad = spinCantidadEgipcia.value
+	on spinTamBaseEgipcia changed param do egipciaTmñBase = spinTamBaseEgipcia.value
+	on spinTamAlturaEgipcia changed param do egipciaAltura = spinTamAlturaEgipcia.value
 )
 
 rollout tailandesa "Parametros sobre Piramides Tailandesas" width:296 height:104(
@@ -117,13 +125,10 @@ rollout tailandesa "Parametros sobre Piramides Tailandesas" width:296 height:104
 	spinner spinEscalonesTailandesa "Número de Escalones" range:[10, 1000, 100] type:#integer
 	spinner spinTamBaseTailandesa "Tamaño de la Base" range:[10, 100, 10] type:#integer
 	spinner spinTamAlturaTailandesa  "Altura de las piramides" range:[10, 100, 10] type:#integer
-	button actualizarTailandesas "Actualizar Piramides Tailandesas"
-	on actualizarTailandesas pressed do(
-		tailandesaCantidad = spinCantidadTailandesa.value
-		tailandesaEscalones = spinEscalonesTailandesa.value
-		tailandesaTmñBase = spinTamBaseTailandesa.value
-		tailandesaAltura = spinTamAlturaTailandesa.value
-	)
+	on spinCantidadTailandesa changed param do tailandesaCantidad = spinCantidadTailandesa.value
+	on spinEscalonesTailandesa changed param do tailandesaEscalones = spinEscalonesTailandesa.value
+	on spinTamBaseTailandesa changed param do tailandesaTmñBase = spinTamBaseTailandesa.value
+	on spinTamAlturaTailandesa changed param do tailandesaAltura = spinTamAlturaTailandesa.value
 )
 
 rollout puentes "Parametros sobre Puentes" width:296 height:104(
@@ -131,38 +136,55 @@ rollout puentes "Parametros sobre Puentes" width:296 height:104(
 	spinner spinLongPuente "Longitud del Puente" range:[5, 50, 5] type:#integer
 	spinner spinAnchPuente "Ancho del Puente" range:[1, 10, 1] type:#integer
 	spinner spinArcosPuente  "Arcos del Puente" range:[1, 20, 2] type:#integer
-	button actualizarPuentes "Actualizar Puentes"
-	on actualizarPuentes pressed do(
-		puenteCantidad = spinCantidadPuentes.value
-		puenteLongitud = spinLongPuente.value
-		puenteAncho = spinAnchPuente.value
-		arcosPuente = spinArcosPuente.value
-	)
+	on spinCantidadPuentes changed param do puenteCantidad = spinCantidadPuentes.value
+	on spinLongPuente changed param do puenteLongitud = spinLongPuente.value
+	on spinAnchPuente changed param do puenteAncho = spinAnchPuente.value
+	on spinArcosPuente changed param do arcosPuente = spinArcosPuente.value
 )
 
 rollout ruinas "Parametros sobre las ruinas" width:296 height:104(
 	spinner spinCantidadRuinas "Número de Ruinas" range:[0, 500, 5] type:#integer
 	spinner spinTamRuinas "Tamaño de las Ruinas" range:[3, 50, 5] type:#integer
-	button actualizarRuinas "Actualizar Ruinas"
-	on actualizarRuinas pressed do(
-		ruinaCantidad = spinCantidadRuinas.value
-		tmñBaseRuinas = spinTamRuinas.value
-	)
+	on spinCantidadRuinas changed param do ruinaCantidad = spinCantidadRuinas.value
+	on spinTamRuinas changed param do tmñBaseRuinas = spinTamRuinas.value
 )
 
 rollout vegetacion "Parametros sobre la Vegetacion" width:296 height:104(
 	spinner spinNumBosques "Numero de Bosques" range:[0, 300, 3] type:#integer
 	dropdownlist dropDensidad "Densidad de Bosques" items:#("Poca", "Normal", "Mucha", "Extrema") selection: 2 
-	button actualizarBosques "Actualizar Bosques"
-	on actualizarBosques pressed do(
-		numBosques = spinNumBosques.value
-		densidad = dropDensidad.selection
-	)
+	on spinNumBosques changed param do numBosques = spinNumBosques.value
+	on dropDensidad selected changed do densidad = dropDensidad.selection
 )
 
 rollout generator "Generar Nuevo Mundo" width:296 height:104(
 	button generar "Generar Nuevo Mundo"
-	on generar pressed do messageBox "TODO"
+	on generar pressed do (
+		crearSuelo tamX tamY
+		try(destroyDialog generador) catch())
+)
+
+-- //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////// --
+-- FUNCIONES /////////////////////////////////////////////////////////////////////////////////////////////////////////// --
+-- //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////// --
+fn cambiarTexturaSuelo tipoMundo = (
+	if tipoMundo == 1 then texturaSueloRuta = texturaLunaRuta
+	else if tipoMundo == 2 then texturaSueloRuta = texturaMarteRuta
+	else if tipoMundo == 3 then texturaSueloRuta = texturaJupiterRuta
+	bitmapSuelo=bitmaptexture filename: texturaSueloRuta
+	matSuelo.diffusemap = bitmapSuelo
+)
+
+fn crearSuelo tamX tamY = (
+	empezarX = - (tamX/2)
+	empezarY = - (tamY/2)
+	acabarX = tamX/2
+	acabarY = tamY/2
+	for contX = empezarX to (acabarX)  do(
+		for contY = empezarY to (acabarY) do(
+			myBox = Box lengthsegs:1 widthsegs:1 heightsegs:1 length: 1 width:1 height:1 mapcoords:on pos:[contX, contY, 0]
+			myBox.material = matSuelo
+		)
+	)
 )
 
 -- //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////// --
