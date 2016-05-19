@@ -12,12 +12,15 @@ try(destroyDialog generador) catch()
 -- GENERALES
 tipoMundo = 1 -- Densidad de 1 a 3: Luna(1), Marte(2) y Jupiter(3).
 
-tamX = 25
-tamY = 25
+tamX = 50
+tamY = 50
 tamMaxZ = 25
-sueloarray = #(#()) -- Array de bloques donde debe ir el suelo
 
-numRocas = 20
+sueloarray = #(#()) -- Array de bloques donde debe ir el suelo
+segundosueloarray = #(#()) -- Array de bloques donde debe ir el suelo
+piedrasarray = #(#()) -- Array con la posicion de las piedras piedrasarray[1][1] = posX, piedrasarray[1][2] = posY (Deberia estar todo a un radio de 3 a 5 de las piedras)
+
+numRocas = 7
 
 numMontañas = 10
 tmñBaseMontañas = 20
@@ -51,16 +54,218 @@ numBosques = 3 --Número de bosques, cada uno con la misma densidad.
 densidad = 2 -- Densidad de 1 a 4, poca a extrema.
 
 -- TEXTURAS
-texturaSueloRuta = sysInfo.currentdir + "\\texturas\luna.jpg"
-texturaLunaRuta = sysInfo.currentdir + "\\texturas\luna.jpg"
-texturaMarteRuta = sysInfo.currentdir + "\\texturas\marte.jpg"
-texturaJupiterRuta = sysInfo.currentdir + "\\texturas\jupiter.jpg"
+texturaSueloRuta = sysInfo.currentdir + "\\Texturas\luna.jpg"
+texturaLunaRuta = sysInfo.currentdir + "\\Texturas\luna.jpg"
+texturaMarteRuta = sysInfo.currentdir + "\\Texturas\marte.jpg"
+texturaJupiterRuta = sysInfo.currentdir + "\\Texturas\jupiter.jpg"
+texturaRoca = sysInfo.currentdir + "\\Texturas\\roca.jpg"
 
 -- MATERIALES
 matSuelo = StandardMaterial()
 bitmapSuelo = bitmaptexture filename: texturaSueloRuta
 matSuelo.diffusemap = bitmapSuelo
 matSuelo.showInViewport = on
+	
+matRoca = StandardMaterial()
+bitmapRoca = bitmaptexture filename: texturaRoca
+matRoca.diffusemap = bitmapRoca
+matRoca.showInViewport = on
+
+-- SKYBOXES
+skyRuta = sysInfo.currentdir + "\\Skybox\luna.jpg"
+skyLunaRuta = sysInfo.currentdir + "\\Skybox\luna.jpg"
+skyMarteRuta = sysInfo.currentdir + "\\Skybox\marte.jpg"
+skyJupiterRuta = sysInfo.currentdir + "\\Skybox\jupiter.jpg"
+bitmapSky = bitmaptexture filename: skyRuta
+environmentMap = bitmapSky
+useEnvironmentMap  = true
+bitmapSky.coordinates.mapping= 3
+
+-- //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////// --
+-- FUNCIONES /////////////////////////////////////////////////////////////////////////////////////////////////////////// --
+-- //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////// --
+
+fn round_to val n = (
+	local mult = 10.0 ^ n
+	(floor ((val * mult) + 0.5)) / mult
+)
+
+fn cambiarTexturaSuelo tipoMundo = (
+	if tipoMundo == 1 then texturaSueloRuta = texturaLunaRuta
+	else if tipoMundo == 2 then texturaSueloRuta = texturaMarteRuta
+	else if tipoMundo == 3 then texturaSueloRuta = texturaJupiterRuta
+	bitmapSuelo=bitmaptexture filename: texturaSueloRuta
+	matSuelo.diffusemap = bitmapSuelo
+)
+
+fn cambiarSkyboxes tipoMundo = (
+	if tipoMundo == 1 then skyRuta = skyLunaRuta
+	else if tipoMundo == 2 then skyRuta = skyMarteRuta
+	else if tipoMundo == 3 then skyRuta = skyJupiterRuta
+	bitmapSky = bitmaptexture filename: skyRuta
+	environmentMap = bitmapSky
+	bitmapSky.coordinates.mapping= 3
+)
+
+fn crearSuelo tamX tamY = (
+
+	for i = 1 to tamX-1  do(
+		append sueloarray #(#())
+		append segundosueloarray #(#())
+		for j = 1 to tamY-1 do(
+			
+			/*Creación, X e Y*/
+			
+			if(i == 1 and j == 1) then (
+				sueloarray[i][j] = Box lengthsegs:1 widthsegs:1 heightsegs:1 length: 1 width:1 height:1 mapcoords:on pos:[i-1, j-1, 0]
+				sueloarray[i][j].material = matSuelo
+			)
+			else if (j == 1) then( /*Si es principio de fila, hacer...*/
+				sueloarray[i][j] = instance sueloarray[i-1][j]
+				sueloarray[i][j].pos.x = i-1
+				sueloarray[i][j].pos.y = j-1
+			)
+			else( /*Si no es principio de fila, hacer...*/
+				sueloarray[i][j] = instance sueloarray[i][j-1]
+				sueloarray[i][j].pos.x=i-1
+				sueloarray[i][j].pos.y=j-1
+			)
+			
+			
+			/* Z */
+			
+			/*Calculo la desviacion*/
+			desviZ = random 0 100
+			if desviZ > 97 then (desviZ = 1)
+			else if desviZ < 3 then (desviZ =-1)
+			else desviZ = 0
+			
+			if(i == 1 or j == 1) then (sueloarray[i][j].pos.z = sueloarray[i][j].pos.z + desviZ)
+			else(
+				sueloarray[i][j].pos.z = (round_to (((sueloarray[i-1][j].pos.z+sueloarray[i][j-1].pos.z+sueloarray[i-1][j-1].pos.z)/3)) 0) + desviZ
+			)
+			
+			/*Correcion 1 Z(Que no se salgan)*/
+			if sueloarray[i][j].pos.z > 1 then sueloarray[i][j].pos.z = 1
+			if sueloarray[i][j].pos.z < -1 then sueloarray[i][j].pos.z = -1
+				
+			segundosueloarray[i][j] = sueloarray[i][j] -- Me guardo el terreno final (o el superior/inferior, ver abajo) en el segundosueloarray
+				
+			/*Correcion 2 Z(Que no hayan agujeros por abajo)*/
+			if(i == 1 or j == 1) then()
+			else if(sueloarray[i][j].pos.z - sueloarray[i-1][j].pos.z > 1) then (
+				relleno = instance sueloarray[i][j]
+				relleno.pos.z = sueloarray[i][j].pos.z-1
+				segundosueloarray[i][j] = relleno -- ME GUARDO EL INFERIOR
+			)
+			else if(sueloarray[i][j].pos.z - sueloarray[i][j-1].pos.z > 1) then (
+				relleno = instance sueloarray[i][j]
+				relleno.pos.z = sueloarray[i][j].pos.z-1
+				segundosueloarray[i][j] = relleno -- ME GUARDO EL INFERIOR
+			)
+			else if(sueloarray[i][j].pos.z - sueloarray[i-1][j-1].pos.z > 1) then (
+				relleno = instance sueloarray[i][j]
+				relleno.pos.z = sueloarray[i][j].pos.z-1
+				segundosueloarray[i][j] = relleno -- ME GUARDO EL INFERIOR
+			)
+			
+			/*Correcion 3 Z(Que no hayan agujeros por arriba)*/
+			if(i == 1 or j == 1) then()
+			else if(sueloarray[i][j].pos.z - sueloarray[i-1][j].pos.z < 0) then (
+				relleno = instance sueloarray[i][j]
+				relleno.pos.z = sueloarray[i][j].pos.z+1
+				segundosueloarray[i][j] = relleno -- ME GUARDO EL SUPERIOR
+			)
+			else if(sueloarray[i][j].pos.z - sueloarray[i][j-1].pos.z < 0) then (
+				relleno = instance sueloarray[i][j]
+				relleno.pos.z = sueloarray[i][j].pos.z+1
+				segundosueloarray[i][j] = relleno -- ME GUARDO EL SUPERIOR
+			)
+			else if(sueloarray[i][j].pos.z - sueloarray[i-1][j-1].pos.z < 0) then (
+				relleno = instance sueloarray[i][j]
+				relleno.pos.z = sueloarray[i][j].pos.z+1
+				segundosueloarray[i][j] = relleno -- ME GUARDO EL SUPERIOR
+			)
+		)
+	)
+)
+
+fn crearSol = (
+	sol = Omnilight multiplier:2 shadowMultiplier:30 pos:[tamX, tamY, tamMaxZ*5]
+	sol.baseObject.castShadows=true
+	if tipoMundo == 1 then sol.rgb = color 255 255 255
+	else if tipoMundo == 2 then sol.rgb = color 255 0 0
+	else if tipoMundo == 3 then  sol.rgb = color 255 255 255
+)
+
+fn crearPiramideEgipcia egipciaCantidad egipciaTmñBase egipciaAltura = (
+	
+	egipciaAltura += egipciaAltura
+	for altura = 1 to (egipciaAltura) do (
+		
+		crearNivelPiramideEgipcia egipciaTmñBase egipciaTmñBase altura
+		egipciaTmñBase -= 1
+	)
+	
+	
+)
+
+fn crearNivelPiramideEgipcia tamX tamY z = (
+	empezarX = - (tamX/2)
+	empezarY = - (tamY/2)
+	acabarX = (tamX/2) 
+	acabarY = (tamY/2)
+	for contX = empezarX to (acabarX)  do(
+		for contY = empezarY to (acabarY) do(
+			myBox = Box lengthsegs:1 widthsegs:1 heightsegs:1 length: 1 width:1 height:1 mapcoords:on pos:[contX, contY, z]
+			myBox.material = matSuelo
+		)
+	)
+)
+
+-- Para aplanar pasar la X donde empezar, la Y donde empezar, la Z a donde quieres aplanar (Uno menos de donde vayas a colocarlo) y las dimensiones x(I) e y(J) de tu edificacion
+fn aplanar x y z i j = (
+	for cont1 = x - i to x + i do(
+		for cont2 = y - j to y + j do(
+			sueloArray[cont1][cont2].pos.z = z
+			segundosueloarray[cont1][cont2].pos.z = z
+		)
+	)
+)
+
+fn crearCapasRoca x y z i j = (
+	for cont1 = x - i to x do(
+		for cont2 = y - j to y do(
+			fragRoca = Box lengthsegs:1 widthsegs:1 heightsegs:1 length: 1 width:1 height:1 mapcoords:on pos:[cont1, cont2, z]
+			fragRoca.material = matRoca
+		)
+	)
+	z = z +1
+	i = i - 1
+	j = j - 1
+	if(i > 0 and j > 0) then ( crearCapasRoca x y z i j )
+)
+
+fn crearRoca = (
+	append piedrasarray #(#())
+	posX = random 5 (tamX - 5)
+	posY = random 5 (tamY - 5)
+	
+	i = 1
+	while piedrasarray[i][1] == undefined do( i = i + 1 )
+	piedrasarray[i][1] = posX
+	piedrasarray[i][2] = posX
+		
+	posZ = 1
+	tamRocaX = random 1 3
+	tamRocaY = random 1 2
+	aplanar posX posY (posZ-1) tamRocaX tamRocaY
+	crearCapasRoca posX posY posZ tamRocaX tamRocaY
+)
+
+fn crearRocas numRocas = (
+	for i = 0 to numRocas  do( crearRoca() )
+)
 
 -- //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////// --
 -- ROLLOUTS //////////////////////////////////////////////////////////////////////////////////////////////////////////// --
@@ -74,12 +279,13 @@ rollout seleccionarMundo "Tipo de Mundo a Generar" width:296 height:104(
 	on radTipoDeMundo changed param do(
 		tipoMundo = radTipoDeMundo.state
 		cambiarTexturaSuelo tipoMundo
+		cambiarSkyboxes tipoMundo
 	)
 )
 
 rollout tamañoMundo "Tamaño del Mundo" width:296 height:104(
-	spinner spinTamX "Tamaño X" range:[25,200,25] type:#integer
-	spinner spinTamY "Tamaño Y" range:[25,200,25] type:#integer
+	spinner spinTamX "Tamaño X" range:[25,200,50] type:#integer
+	spinner spinTamY "Tamaño Y" range:[25,200,50] type:#integer
 	spinner spinTamMaxZ "Tamaño Maximo Z" range:[25,200,25] type:#integer
 	on spinTamX changed param do tamX = spinTamX.value
 	on spinTamY changed param do tamY = spinTamY.value
@@ -87,7 +293,7 @@ rollout tamañoMundo "Tamaño del Mundo" width:296 height:104(
 )
 
 rollout piedras "Parametros sobre Rocas" width:296 height:104(
-	spinner spinNumRocas "Número de Rocas" range:[0, 300, 20] type:#integer
+	spinner spinNumRocas "Número de Rocas" range:[0, 300, 7] type:#integer
 	on spinNumRocas changed param do numRocas = spinNumRocas.value
 )
 
@@ -160,31 +366,10 @@ rollout generator "Generar Nuevo Mundo" width:296 height:104(
 	button generar "Generar Nuevo Mundo"
 	on generar pressed do (
 		crearSuelo tamX tamY
+		crearSol()
+		crearRocas numRocas
+		--crearPiramideEgipcia egipciaCantidad egipciaTmñBase egipciaAltura
 		try(destroyDialog generador) catch())
-)
-
--- //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////// --
--- FUNCIONES /////////////////////////////////////////////////////////////////////////////////////////////////////////// --
--- //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////// --
-fn cambiarTexturaSuelo tipoMundo = (
-	if tipoMundo == 1 then texturaSueloRuta = texturaLunaRuta
-	else if tipoMundo == 2 then texturaSueloRuta = texturaMarteRuta
-	else if tipoMundo == 3 then texturaSueloRuta = texturaJupiterRuta
-	bitmapSuelo=bitmaptexture filename: texturaSueloRuta
-	matSuelo.diffusemap = bitmapSuelo
-)
-
-fn crearSuelo tamX tamY = (
-	empezarX = - (tamX/2)
-	empezarY = - (tamY/2)
-	acabarX = tamX/2
-	acabarY = tamY/2
-	for contX = empezarX to (acabarX)  do(
-		for contY = empezarY to (acabarY) do(
-			myBox = Box lengthsegs:1 widthsegs:1 heightsegs:1 length: 1 width:1 height:1 mapcoords:on pos:[contX, contY, 0]
-			myBox.material = matSuelo
-		)
-	)
 )
 
 -- //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////// --
