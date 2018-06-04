@@ -10,7 +10,5 @@ Max Script plugin that allows you to generate custom Minecraft worlds on the Moo
 * There's a series of constructions, such as pyramids, bridges and ruins.
 * Trees! Now there's sure life in mars.
 
-___
 
-
-[Daniel Finestrat Martínez 2016.](https://garagefruit.com)
+[Daniel Finestrat Martínez 2016.](https://danielfinestrat.com)
