@@ -11,4 +11,4 @@ Max Script plugin that allows you to generate custom Minecraft worlds on the Moo
 * Trees! Now there's sure life in mars.
 
 
-[Daniel Finestrat Martínez 2016.](https://danielfinestrat.com)
+2016.
