@@ -1,5 +1,5 @@
-# Minecraft World Generator
-Max Script plugin that allows you to generate custom Minecraft worlds on the Moon, Mars or Jupiter.
+# Cube World Generator
+Max Script plugin that allows you to generate custom cube based worlds on the Moon, Mars or Jupiter.
 
 # Features:
 
